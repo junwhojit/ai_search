@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인공지능과 탐색 — 전구 켜기 · 미로 찾기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EEF2F6;
+    --paper-line: rgba(22,35,61,0.05);
+    --panel:#FFFFFF;
+    --panel-2:#F2F5F9;
+    --border:#DCE3EC;
+    --ink:#16233D;
+    --ink-dim:#5C6B84;
+    --copper:#C1622E;
+    --copper-bright:#A6501F;
+    --amber:#E8A33D;
+    --amber-soft:#FBEBD2;
+    --teal:#128F7C;
+    --teal-soft:#DCF3EE;
+    --violet:#5B52D6;
+    --violet-soft:#E9E7FB;
+    --wall:#2B3A5A;
+    --wall-light:#44567D;
+    --off-glass:#D7DDE6;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px),
+      var(--paper);
+    background-size:26px 26px, 26px 26px, auto;
+    color:var(--ink);
+    font-family:'Noto Sans KR', sans-serif;
+    min-height:100vh;
+    padding-bottom:70px;
+  }
+  .wrap{max-width:1140px;margin:0 auto;padding:0 22px;}
+
+  nav.topnav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(238,242,246,0.86);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+    padding:13px 22px;
+  }
+  nav.topnav .inner{max-width:1140px;margin:0 auto;display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+  nav.topnav .brand{color:var(--ink);font-weight:600;letter-spacing:.04em;margin-right:6px;display:flex;align-items:center;gap:7px;}
+  nav.topnav .brand .sq{width:9px;height:9px;background:var(--amber);border-radius:2px;display:inline-block;}
+  nav.topnav a{color:var(--ink-dim);text-decoration:none;padding:5px 11px;border-radius:7px;transition:.15s;}
+  nav.topnav a:hover{color:var(--ink);background:var(--panel-2);}
+
+  header.hero{margin:40px 0 6px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;
+    font-size:12px;color:var(--teal);margin-bottom:12px;display:flex;align-items:center;gap:9px;}
+  .eyebrow .line{height:1px;width:34px;background:var(--teal);opacity:.5;}
+  h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(28px,4.4vw,42px);
+    margin:0 0 14px;letter-spacing:-0.01em;color:var(--ink);}
+  header.hero p{color:var(--ink-dim);font-size:15.5px;line-height:1.75;max-width:720px;margin:0;}
+
+  .trace{
+    display:flex;align-items:center;gap:10px;margin:26px 0 6px;
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-dim);
+  }
+  .trace .node{width:8px;height:8px;border-radius:50%;background:var(--ink-dim);flex:none;}
+  .trace .seg{flex:1;height:1px;background:repeating-linear-gradient(90deg, var(--border) 0 6px, transparent 6px 10px);}
+
+  h2.sect-title{font-family:'Space Grotesk',sans-serif;font-size:23px;font-weight:700;
+    margin:0 0 6px;display:flex;align-items:center;gap:11px;color:var(--ink);}
+  h2.sect-title .tag{
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;color:var(--copper-bright);
+    background:var(--amber-soft);border:1px solid #F0D6AC;padding:3px 9px;border-radius:20px;letter-spacing:.04em;
+  }
+  .sect-sub{color:var(--ink-dim);font-size:14.5px;margin:0 0 22px;line-height:1.75;max-width:760px;}
+  section.block{padding:50px 0;border-top:1px solid var(--border);}
+  section.block:first-of-type{border-top:none;}
+
+  .rules, .info-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:18px 22px;font-size:14.5px;line-height:1.85;color:var(--ink-dim);
+    box-shadow:0 1px 2px rgba(22,35,61,0.03);}
+  .rules b, .info-card b{color:var(--ink);font-weight:600;}
+  code{font-family:'IBM Plex Mono',monospace;background:var(--panel-2);border:1px solid var(--border);
+    padding:1px 7px;border-radius:6px;color:var(--copper-bright);font-size:13px;}
+
+  .glayout{display:grid;grid-template-columns:1fr 360px;gap:24px;align-items:start;margin-top:22px;}
+  @media (max-width:880px){.glayout{grid-template-columns:1fr;}}
+
+  .board{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:20px;
+    position:relative;box-shadow:0 1px 3px rgba(22,35,61,0.05);}
+  .board-label{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-dim);
+    letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;display:flex;justify-content:space-between;}
+  svg{width:100%;height:auto;display:block;}
+
+  /* ---- bulb circuit ---- */
+  .wire{stroke:#C7CFDB;stroke-width:3;fill:none;transition:stroke .25s;}
+  .wire.energized{stroke:var(--amber);}
+  .switch-hit{cursor:pointer;transform-box:fill-box;transform-origin:center;}
+  .switch-body{fill:var(--panel-2);stroke:var(--copper);stroke-width:2.5;transition:all .15s ease;}
+  .switch-hit:hover .switch-body{fill:#FBEFE0;stroke:var(--copper-bright);}
+  .switch-hit:active .switch-body{transform:scale(.94);}
+  .switch-label{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;fill:var(--copper-bright);
+    text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+  .switch-caption{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:var(--ink-dim);
+    text-anchor:middle;pointer-events:none;}
+  .bulb-glass{fill:var(--off-glass);stroke:#BCC5D2;stroke-width:2;transition:fill .35s ease, stroke .35s ease, filter .35s ease;}
+  .bulb-glass.on{fill:var(--amber);stroke:#C77F1F;filter:drop-shadow(0 0 14px rgba(232,163,61,0.65)) drop-shadow(0 0 30px rgba(232,163,61,0.35));}
+  .bulb-base{fill:#8892A0;stroke:#6E7688;stroke-width:1;}
+  .bulb-number{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;
+    text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+  .bulb-number.on{fill:#5A3C09;}
+  .bulb-number.off{fill:#8A93A3;}
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:22px;
+    display:flex;flex-direction:column;gap:18px;box-shadow:0 1px 3px rgba(22,35,61,0.05);}
+  .stat-row{display:flex;gap:12px;}
+  .stat{flex:1;background:var(--panel-2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;}
+  .stat .k{font-size:10.5px;color:var(--ink-dim);letter-spacing:.07em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;}
+  .stat .v{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;margin-top:3px;color:var(--teal);}
+  .state-bits{display:flex;gap:8px;}
+  .bit{flex:1;text-align:center;padding:8px 0;border-radius:8px;font-family:'IBM Plex Mono',monospace;
+    font-size:13px;border:1px solid var(--border);background:var(--panel-2);color:var(--ink-dim);}
+  .bit.on{color:var(--copper-bright);border-color:#EAC48A;background:var(--amber-soft);}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;}
+  button.action{flex:1;min-width:100px;font-family:'Noto Sans KR',sans-serif;font-weight:500;font-size:13.5px;
+    padding:11px 10px;border-radius:10px;border:1px solid var(--border);background:var(--panel-2);
+    color:var(--ink);cursor:pointer;transition:all .15s;}
+  button.action:hover{border-color:var(--copper);color:var(--copper-bright);}
+  button.action.violet{background:var(--violet-soft);border-color:#C9C3F2;color:#4038A8;}
+  button.action.violet:hover{border-color:var(--violet);}
+
+  .win-banner{display:none;background:linear-gradient(135deg, var(--teal-soft), var(--amber-soft));
+    border:1px solid #BFE6DC;border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.6;color:var(--ink-dim);}
+  .win-banner.show{display:block;}
+  .win-banner b{color:var(--teal);font-family:'Space Grotesk',sans-serif;}
+
+  .chain-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-dim);
+    text-transform:uppercase;letter-spacing:.08em;margin:2px 0 0;}
+  .chain-wrap{background:var(--panel-2);border:1px solid var(--border);border-radius:12px;padding:14px;
+    min-height:88px;overflow-x:auto;}
+  .chain{display:flex;align-items:center;gap:0;min-width:max-content;}
+  .chain-node{display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:7px 11px;border-radius:10px;background:var(--panel);border:1px solid var(--border);
+    font-family:'IBM Plex Mono',monospace;min-width:60px;}
+  .chain-node.root{border-color:var(--copper);}
+  .chain-node.goal{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft);}
+  .chain-node .code{font-size:14px;font-weight:600;color:var(--ink);letter-spacing:.05em;}
+  .chain-node .lit{font-size:9px;color:var(--ink-dim);}
+  .chain-edge{display:flex;flex-direction:column;align-items:center;padding:0 9px;color:var(--ink-dim);}
+  .chain-edge .arrow{font-size:15px;color:#B7BFCC;}
+  .chain-edge .swlabel{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--copper-bright);
+    background:var(--amber-soft);border:1px solid #EFD7A9;border-radius:6px;padding:1px 6px;margin-top:2px;}
+
+  /* ---- maze ---- */
+  .maze{position:relative;margin:0 auto;}
+  .cellgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;}
+  .cell{aspect-ratio:1/1;border-radius:6px;background:var(--panel-2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;
+    font-size:10px;color:#AEB6C4;position:relative;}
+  .cell.wall{background:var(--wall);border-color:var(--wall-light);}
+  .cell.start{background:var(--amber-soft);border-color:var(--amber);color:var(--copper-bright);font-weight:700;font-size:11px;}
+  .cell.goal{background:var(--teal-soft);border-color:var(--teal);color:var(--teal);font-weight:700;font-size:11px;}
+  .cell.visited::after{content:"";position:absolute;inset:22%;border-radius:3px;background:var(--trailcolor, rgba(232,163,61,.4));}
+  .mouse{position:absolute;width:calc(100%/8 - 4px);height:calc(100%/8 - 4px);
+    display:flex;align-items:center;justify-content:center;
+    transition:left .28s cubic-bezier(.4,0,.2,1), top .28s cubic-bezier(.4,0,.2,1), transform .28s ease;
+    pointer-events:none;z-index:5;}
+  .mouse .tri{width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;
+    border-bottom:16px solid var(--teal);filter:drop-shadow(0 1px 3px rgba(18,143,124,.5));}
+
+  .algo-btns{display:flex;flex-direction:column;gap:10px;}
+  button.algo{text-align:left;font-family:'Noto Sans KR',sans-serif;padding:12px 14px;border-radius:12px;
+    border:1px solid var(--border);background:var(--panel-2);color:var(--ink);cursor:pointer;transition:.15s;}
+  button.algo .t{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;}
+  button.algo .d{font-size:12px;color:var(--ink-dim);margin-top:3px;line-height:1.5;}
+  button.algo:hover{border-color:var(--copper);}
+  button.algo.a{border-left:3px solid var(--copper);}
+  button.algo.b{border-left:3px solid var(--violet);}
+  button.algo.c{border-left:3px solid var(--teal);}
+  button.algo:disabled{opacity:.45;cursor:not-allowed;}
+  .log{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.8;color:var(--ink-dim);
+    height:120px;overflow-y:auto;}
+
+  .compare{margin-top:26px;}
+  .ctable{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);
+    border-radius:14px;overflow:hidden;}
+  .ctable th{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-dim);text-transform:uppercase;
+    letter-spacing:.06em;text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--panel-2);}
+  .ctable td{padding:10px 16px;border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:13.5px;}
+  .ctable td.name{font-family:'Noto Sans KR',sans-serif;font-weight:600;color:var(--ink);}
+  .ctable tr:last-child td{border-bottom:none;}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;}
+
+  footer{margin-top:50px;color:var(--ink-dim);font-size:12px;text-align:center;}
+</style>
+</head>
+<body>
+
+<nav class="topnav"><div class="inner">
+  <span class="brand"><span class="sq"></span>인공지능과 탐색</span>
+  <a href="#maze">미로 찾기</a>
+  <a href="#bulb">전구 켜기</a>
+</div></nav>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow"><span class="line"></span>SEARCH · 인공지능 기초</div>
+    <h1>인공지능과 탐색</h1>
+    <p>탐색은 문제 상황에서 답을 찾아가는 과정이다. 아래 두 문제 — <b style="color:var(--ink)">미로 찾기</b>와
+    <b style="color:var(--ink)">전구 켜기</b> — 는 서로 다른 상황이지만 똑같이 <b style="color:var(--ink)">초기 상태에서
+    목표 상태까지의 경로를 찾는 탐색 문제</b>다. 직접 조작해 보면서 상태, 수행 작업, 탐색 전략이라는
+    개념이 실제로 어떻게 작동하는지 확인해 보자.</p>
+  </header>
+
+  <!-- ================= 미로 찾기 ================= -->
+  <section class="block" id="maze">
+    <h2 class="sect-title">미로 찾기 문제 <span class="tag">pathfinding</span></h2>
+    <p class="sect-sub">마이크로마우스는 미로의 모습을 미리 알 수 없다. 서로 다른 세 가지 알고리즘 —
+    A(고정 명령), B(왼쪽 벽 따라가기), C(목적지까지 거리 활용) — 를 직접 실행해 보고, 같은 미로라도
+    알고리즘에 따라 탐색 범위와 이동 횟수가 어떻게 달라지는지 비교해 보자.</p>
+
+    <div class="rules">
+      <b>A 알고리즘</b>: 출발부터 도착까지 정해진 순서(앞으로/좌회전/우회전)를 미리 명령한다 — 이 미로에서는
+      통하지만, 미로 모양이 바뀌면 다시 작동하지 않는다.<br>
+      <b>B 알고리즘</b>: 왼쪽에 벽이 있으면 그 벽을 따라가고, 왼쪽이 비어 있으면 왼쪽으로 돌아 나아간다 — 미로
+      모습을 몰라도 통하지만 경로가 멀리 돌아갈 수 있다.<br>
+      <b>C 알고리즘</b>: 각 칸에 목적지까지 남은 거리를 매기고, 항상 더 가까운 칸으로 이동한다 — 막다른 길이면
+      되돌아가며, 대체로 A·B보다 효율적인 경로를 찾는다.
+    </div>
+
+    <div class="glayout">
+      <div class="board">
+        <div class="board-label"><span>미로 · 8×6</span><span id="m-statusText"></span></div>
+        <div class="maze">
+          <div class="cellgrid" id="m-grid"></div>
+          <div class="mouse" id="m-mouse"><div class="tri"></div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="algo-btns">
+          <button class="algo a" id="m-btnA">
+            <div class="t">🅰️ A 알고리즘 실행</div>
+            <div class="d">앞으로 3 → 좌회전 → 앞으로 2 → 우회전 … 고정된 명령대로 이동</div>
+          </button>
+          <button class="algo b" id="m-btnB">
+            <div class="t">🅱️ B 알고리즘 실행</div>
+            <div class="d">왼쪽 벽을 따라가며 미로를 탈출 (좌수법)</div>
+          </button>
+          <button class="algo c" id="m-btnC">
+            <div class="t">🅲 C 알고리즘 실행</div>
+            <div class="d">목적지까지 거리가 가까운 칸으로 이동, 막히면 되돌아가기</div>
+          </button>
+        </div>
+        <button class="action" id="m-btnReset">초기화</button>
+
+        <div class="stat-row">
+          <div class="stat"><div class="k">이동 횟수</div><div class="v" id="m-statMoves">0</div></div>
+          <div class="stat"><div class="k">방문 칸 수</div><div class="v" id="m-statVisited">0</div></div>
+        </div>
+
+        <div class="log" id="m-logBox"></div>
+      </div>
+    </div>
+
+    <div class="compare">
+      <table class="ctable">
+        <thead><tr><th>알고리즘</th><th>이동 횟수</th><th>방문한 칸 수</th></tr></thead>
+        <tbody>
+          <tr><td class="name"><span class="dot" style="background:var(--copper);"></span>A 알고리즘</td><td id="m-cmpA-moves">—</td><td id="m-cmpA-visited">—</td></tr>
+          <tr><td class="name"><span class="dot" style="background:var(--violet);"></span>B 알고리즘</td><td id="m-cmpB-moves">—</td><td id="m-cmpB-visited">—</td></tr>
+          <tr><td class="name"><span class="dot" style="background:var(--teal);"></span>C 알고리즘</td><td id="m-cmpC-moves">—</td><td id="m-cmpC-visited">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="trace"><div class="node"></div><div class="seg"></div><span>동일한 탐색 개념 — 다른 문제 상황</span><div class="seg"></div><div class="node"></div></div>
+
+  <!-- ================= 전구 켜기 ================= -->
+  <section class="block" id="bulb">
+    <h2 class="sect-title">전구 켜기 문제 <span class="tag">state search</span></h2>
+    <p class="sect-sub">스위치 A, B, C, D를 눌러 전구 ①~④를 모두 켜 보자. 스위치 하나를 누르면 그 스위치와
+    연결된 전구 3개의 상태가 반전(켜짐↔꺼짐)된다.</p>
+
+    <div class="rules">
+      각 스위치는 서로 다른 전구 3개와 연결되어 있다 — <code>A → ①②④</code>,
+      <code>B → ①②③</code>, <code>C → ②③④</code>, <code>D → ①③④</code>.
+      같은 스위치를 두 번 누르면 원래 상태로 되돌아오므로, <b>중요한 것은 각 스위치를
+      누르는 횟수의 홀짝(0 또는 1번)</b>이며 순서는 결과에 영향을 주지 않는다.
+    </div>
+
+    <div class="glayout">
+      <div class="board">
+        <div class="board-label"><span>회로도 · click a switch</span><span id="b-badge"></span></div>
+        <svg id="b-svg" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg">
+          <g class="wires-g"></g><g class="bulbs-g"></g><g class="switches-g"></g>
+        </svg>
+      </div>
+
+      <div class="panel">
+        <div class="stat-row">
+          <div class="stat"><div class="k">조작 횟수</div><div class="v" id="b-moves">0</div></div>
+          <div class="stat"><div class="k">켜진 전구</div><div class="v" id="b-lit">0 / 4</div></div>
+        </div>
+        <div>
+          <div class="k" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">현재 상태 (① ② ③ ④)</div>
+          <div class="state-bits" id="b-bits"></div>
+        </div>
+        <div class="win-banner" id="b-win"><b>모두 켜졌습니다!</b><br>총 <span id="b-winmoves">0</span>번의 조작으로 목표 상태(1111)에 도달했다.</div>
+        <div class="btnrow">
+          <button class="action" id="b-reset">초기화</button>
+          <button class="action violet" id="b-strategy">전략 실행 (A→B→C→D)</button>
+        </div>
+        <div class="chain-label">상태 공간 경로</div>
+        <div class="chain-wrap"><div class="chain" id="b-chain"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>인공지능과 탐색 · 인공지능 기초 1단원 학습 도구 — 전구 켜기 문제 &amp; 미로 찾기 문제</footer>
+</div>
+
+<script>
+/* ============================= 전구 켜기 ============================= */
+(function(){
+  const wiring = { A:[1,2,4], B:[1,2,3], C:[2,3,4], D:[1,3,4] };
+  const switchPos = { A:{x:280,y:60}, B:{x:500,y:280}, C:{x:280,y:500}, D:{x:60,y:280} };
+  const bulbPos = { 1:{x:280,y:170}, 2:{x:390,y:280}, 3:{x:280,y:390}, 4:{x:170,y:280} };
+  const NS = "http://www.w3.org/2000/svg";
+  const numChar = ['①','②','③','④'];
+
+  function el(tag, attrs){ const e=document.createElementNS(NS, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+  function stateStr(arr){ return arr.map(b=>b?'1':'0').join(''); }
+
+  const svg = document.getElementById('b-svg');
+  const wiresG = svg.querySelector('.wires-g');
+  const bulbsG = svg.querySelector('.bulbs-g');
+  const switchesG = svg.querySelector('.switches-g');
+
+  const wireEls = [];
+  Object.keys(wiring).forEach(sw=>{
+    wiring[sw].forEach(bn=>{
+      const p1 = switchPos[sw], p2 = bulbPos[bn];
+      const line = el('line',{x1:p1.x,y1:p1.y,x2:p2.x,y2:p2.y,class:'wire'});
+      wiresG.appendChild(line);
+      wireEls.push({line, bulb:bn});
+    });
+  });
+
+  const bulbEls = {};
+  [1,2,3,4].forEach(bn=>{
+    const p = bulbPos[bn];
+    const g = el('g',{});
+    const glass = el('circle',{cx:p.x,cy:p.y,r:34,class:'bulb-glass'});
+    const base = el('rect',{x:p.x-10,y:p.y+30,width:20,height:14,rx:3,class:'bulb-base'});
+    const num = el('text',{x:p.x,y:p.y,class:'bulb-number off'});
+    num.textContent = numChar[bn-1];
+    g.appendChild(glass); g.appendChild(base); g.appendChild(num);
+    bulbsG.appendChild(g);
+    bulbEls[bn] = {glass, num};
+  });
+
+  Object.keys(switchPos).forEach(sw=>{
+    const p = switchPos[sw];
+    const g = el('g',{class:'switch-hit'});
+    const body = el('rect',{x:p.x-32,y:p.y-26,width:64,height:52,rx:12,class:'switch-body'});
+    const label = el('text',{x:p.x,y:p.y-2,class:'switch-label'});
+    label.textContent = sw;
+    const cap = el('text',{x:p.x,y:p.y+18,class:'switch-caption'});
+    cap.textContent = wiring[sw].map(n=>numChar[n-1]).join(' ');
+    g.appendChild(body); g.appendChild(label); g.appendChild(cap);
+    g.addEventListener('click', ()=>press(sw));
+    switchesG.appendChild(g);
+  });
+
+  const bitsBox = document.getElementById('b-bits');
+  const bitEls = [];
+  for(let i=0;i<4;i++){
+    const d = document.createElement('div');
+    d.className = 'bit';
+    bitsBox.appendChild(d);
+    bitEls.push(d);
+  }
+
+  const movesEl = document.getElementById('b-moves');
+  const litEl = document.getElementById('b-lit');
+  const winEl = document.getElementById('b-win');
+  const winMovesEl = document.getElementById('b-winmoves');
+  const chainEl = document.getElementById('b-chain');
+  const badgeEl = document.getElementById('b-badge');
+
+  let state, moves, chain;
+
+  function render(){
+    [1,2,3,4].forEach(bn=>{
+      const on = state[bn-1];
+      bulbEls[bn].glass.classList.toggle('on', on);
+      bulbEls[bn].num.classList.toggle('on', on);
+      bulbEls[bn].num.classList.toggle('off', !on);
+    });
+    wireEls.forEach(w=>{ w.line.classList.toggle('energized', state[w.bulb-1]); });
+    for(let i=0;i<4;i++){
+      bitEls[i].classList.toggle('on', state[i]);
+      bitEls[i].textContent = numChar[i] + ' ' + (state[i]?'1':'0');
+    }
+    movesEl.textContent = moves;
+    const lit = state.filter(Boolean).length;
+    litEl.textContent = lit + ' / 4';
+    const won = lit === 4;
+    winEl.classList.toggle('show', won);
+    if(won) winMovesEl.textContent = moves;
+    badgeEl.textContent = won ? '✓ 목표 상태' : '';
+    renderChain();
+  }
+
+  function renderChain(){
+    chainEl.innerHTML = '';
+    chain.forEach((node, idx)=>{
+      if(idx>0){
+        const edge = document.createElement('div');
+        edge.className = 'chain-edge';
+        edge.innerHTML = '<span class="arrow">→</span><span class="swlabel">'+node.sw+'</span>';
+        chainEl.appendChild(edge);
+      }
+      const n = document.createElement('div');
+      const lit4 = node.state.filter(Boolean).length===4;
+      n.className = 'chain-node' + (idx===0?' root':'') + (lit4?' goal':'');
+      n.innerHTML = '<div class="code">'+stateStr(node.state)+'</div><div class="lit">'+(idx===0?'초기':(lit4?'목표!':'상태'))+'</div>';
+      chainEl.appendChild(n);
+    });
+  }
+
+  function press(sw){
+    const next = state.slice();
+    wiring[sw].forEach(bn=>{ next[bn-1] = !next[bn-1]; });
+    state = next;
+    moves++;
+    chain.push({sw, state:state.slice()});
+    render();
+  }
+
+  function reset(){
+    state = [false,false,false,false];
+    moves = 0;
+    chain = [{sw:null, state:state.slice()}];
+    render();
+  }
+
+  async function runStrategy(order){
+    for(const sw of order){
+      await new Promise(r=>setTimeout(r, 550));
+      press(sw);
+    }
+  }
+
+  document.getElementById('b-reset').addEventListener('click', reset);
+  document.getElementById('b-strategy').addEventListener('click', ()=>{ reset(); runStrategy(['A','B','C','D']); });
+
+  reset();
+})();
+
+/* ============================= 미로 찾기 ============================= */
+(function(){
+  const grid = [
+    [0,1,0,1,0,0,0,0],
+    [0,0,0,1,0,1,1,0],
+    [0,0,1,1,0,1,1,0],
+    [1,0,0,0,0,0,1,0],
+    [1,1,1,0,1,0,0,0],
+    [0,0,0,0,1,1,0,0],
+  ];
+  const ROWS = 6, COLS = 8;
+  const start = {r:5,c:0};
+  const goal  = {r:0,c:7};
+
+  const DIRV = { N:{dr:-1,dc:0}, E:{dr:0,dc:1}, S:{dr:1,dc:0}, W:{dr:0,dc:-1} };
+  const ORDER = ['N','E','S','W'];
+  function leftOf(d){ const i=ORDER.indexOf(d); return ORDER[(i+3)%4]; }
+  function rightOf(d){ const i=ORDER.indexOf(d); return ORDER[(i+1)%4]; }
+  function inb(r,c){ return r>=0 && r<ROWS && c>=0 && c<COLS; }
+  function isOpen(r,c){ return inb(r,c) && grid[r][c]===0; }
+  function dist(r,c){ return r + (7-c); }
+  const rotDeg = {N:0, E:90, S:180, W:270};
+
+  const gridEl = document.getElementById('m-grid');
+  const cellEls = [];
+  for(let r=0;r<ROWS;r++){
+    cellEls.push([]);
+    for(let c=0;c<COLS;c++){
+      const d = document.createElement('div');
+      d.className = 'cell' + (grid[r][c]===1?' wall':'');
+      if(r===start.r && c===start.c){ d.classList.add('start'); d.textContent='출발'; }
+      if(r===goal.r && c===goal.c){ d.classList.add('goal'); d.textContent='도착'; }
+      gridEl.appendChild(d);
+      cellEls[r].push(d);
+    }
+  }
+
+  const mouseEl = document.getElementById('m-mouse');
+  const statusText = document.getElementById('m-statusText');
+  const statMoves = document.getElementById('m-statMoves');
+  const statVisited = document.getElementById('m-statVisited');
+  const logBox = document.getElementById('m-logBox');
+  const btnA = document.getElementById('m-btnA');
+  const btnB = document.getElementById('m-btnB');
+  const btnC = document.getElementById('m-btnC');
+  const btnReset = document.getElementById('m-btnReset');
+
+  function log(msg){
+    const row = document.createElement('div');
+    row.textContent = msg;
+    logBox.appendChild(row);
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+
+  function positionMouse(r,c,deg){
+    mouseEl.style.left = (c*(100/8)) + '%';
+    mouseEl.style.top = (r*(100/6)) + '%';
+    mouseEl.style.transform = 'rotate('+deg+'deg)';
+  }
+
+  function clearTrail(){
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) cellEls[r][c].classList.remove('visited');
+  }
+
+  let running = false;
+  function setButtonsDisabled(v){ btnA.disabled=v; btnB.disabled=v; btnC.disabled=v; }
+
+  function resetAll(){
+    running = false;
+    clearTrail();
+    positionMouse(start.r, start.c, 90);
+    statusText.textContent = '';
+    statMoves.textContent = '0';
+    statVisited.textContent = '0';
+    logBox.innerHTML = '';
+    setButtonsDisabled(false);
+  }
+
+  function buildA(){
+    const cmds = [['F',3],['L',0],['F',2],['R',0],['F',1],['L',0],['F',3],['R',0],['F',3]];
+    let pos = {r:start.r,c:start.c}, facing='E';
+    const events = [];
+    cmds.forEach(([t,n])=>{
+      if(t==='L'){ facing = leftOf(facing); events.push({type:'turn', facing, note:'왼쪽으로 90도 회전'}); }
+      else if(t==='R'){ facing = rightOf(facing); events.push({type:'turn', facing, note:'오른쪽으로 90도 회전'}); }
+      else {
+        for(let i=0;i<n;i++){
+          const v = DIRV[facing];
+          pos = {r:pos.r+v.dr, c:pos.c+v.dc};
+          events.push({type:'move', r:pos.r, c:pos.c, facing, note:'앞으로 한 칸 이동'});
+        }
+      }
+    });
+    return events;
+  }
+
+  function buildB(){
+    let pos = {r:start.r,c:start.c}, facing='E';
+    const events = [];
+    let guard = 0;
+    while(!(pos.r===goal.r && pos.c===goal.c) && guard < 300){
+      guard++;
+      const ld = leftOf(facing);
+      const lv = DIRV[ld];
+      if(isOpen(pos.r+lv.dr, pos.c+lv.dc)){
+        facing = ld;
+        pos = {r:pos.r+lv.dr, c:pos.c+lv.dc};
+        events.push({type:'move', r:pos.r, c:pos.c, facing, note:'왼쪽이 비어 있어 좌회전 후 이동'});
+        continue;
+      }
+      const fv = DIRV[facing];
+      if(isOpen(pos.r+fv.dr, pos.c+fv.dc)){
+        pos = {r:pos.r+fv.dr, c:pos.c+fv.dc};
+        events.push({type:'move', r:pos.r, c:pos.c, facing, note:'앞으로 직진'});
+        continue;
+      }
+      facing = rightOf(facing);
+      events.push({type:'turn', facing, note:'앞이 막혀 오른쪽으로 회전'});
+    }
+    return events;
+  }
+
+  function buildC(){
+    let cur = {r:start.r,c:start.c};
+    const visited = new Set([cur.r+','+cur.c]);
+    const stack = [cur];
+    const events = [];
+    let guard = 0;
+    while(!(stack[stack.length-1].r===goal.r && stack[stack.length-1].c===goal.c) && guard < 300){
+      guard++;
+      const top = stack[stack.length-1];
+      const cands = [];
+      [['N',-1,0],['E',0,1],['S',1,0],['W',0,-1]].forEach(([d,dr,dc])=>{
+        const nr=top.r+dr, nc=top.c+dc;
+        if(isOpen(nr,nc) && !visited.has(nr+','+nc)) cands.push({r:nr,c:nc,d,dist:dist(nr,nc)});
+      });
+      cands.sort((a,b)=>a.dist-b.dist);
+      if(cands.length){
+        const nxt = cands[0];
+        visited.add(nxt.r+','+nxt.c);
+        stack.push({r:nxt.r,c:nxt.c});
+        events.push({type:'move', r:nxt.r, c:nxt.c, note:'거리 '+nxt.dist+'인 칸으로 이동'});
+      } else {
+        stack.pop();
+        const back = stack[stack.length-1];
+        events.push({type:'move', r:back.r, c:back.c, note:'막다른 길 — 이전 분기점으로 되돌아감'});
+      }
+    }
+    return events;
+  }
+
+  async function play(events, algoName, colorVar){
+    running = true;
+    setButtonsDisabled(true);
+    clearTrail();
+    positionMouse(start.r, start.c, 90);
+    statMoves.textContent = '0';
+    statVisited.textContent = '1';
+    logBox.innerHTML = '';
+    statusText.textContent = algoName + ' 실행 중...';
+    log(algoName + ' 시작 — 출발 (' + start.r + ',' + start.c + ')');
+
+    const visitedSet = new Set([start.r+','+start.c]);
+    let moves = 0;
+    for(const ev of events){
+      await new Promise(res=>setTimeout(res, 260));
+      if(ev.type==='turn'){
+        mouseEl.style.transform = 'rotate('+rotDeg[ev.facing]+'deg)';
+        log('↻ ' + ev.note);
+      } else {
+        moves++;
+        positionMouse(ev.r, ev.c, ev.facing?rotDeg[ev.facing]:parseFloat((mouseEl.style.transform.match(/-?[\d.]+/)||[0])[0]));
+        cellEls[ev.r][ev.c].style.setProperty('--trailcolor', colorVar);
+        cellEls[ev.r][ev.c].classList.add('visited');
+        visitedSet.add(ev.r+','+ev.c);
+        statMoves.textContent = moves;
+        statVisited.textContent = visitedSet.size;
+        log((moves)+'. '+ev.note+' → ('+ev.r+','+ev.c+')');
+      }
+    }
+    statusText.textContent = '✓ 도착!';
+    log('목표(도착) 지점에 도달했습니다. 총 ' + moves + '회 이동, ' + visitedSet.size + '칸 방문');
+    setButtonsDisabled(false);
+    running = false;
+    return {moves, visited:visitedSet.size};
+  }
+
+  btnA.addEventListener('click', async ()=>{
+    if(running) return;
+    const r = await play(buildA(), 'A 알고리즘', 'rgba(193,98,46,0.35)');
+    document.getElementById('m-cmpA-moves').textContent = r.moves;
+    document.getElementById('m-cmpA-visited').textContent = r.visited;
+  });
+  btnB.addEventListener('click', async ()=>{
+    if(running) return;
+    const r = await play(buildB(), 'B 알고리즘', 'rgba(91,82,214,0.30)');
+    document.getElementById('m-cmpB-moves').textContent = r.moves;
+    document.getElementById('m-cmpB-visited').textContent = r.visited;
+  });
+  btnC.addEventListener('click', async ()=>{
+    if(running) return;
+    const r = await play(buildC(), 'C 알고리즘', 'rgba(18,143,124,0.30)');
+    document.getElementById('m-cmpC-moves').textContent = r.moves;
+    document.getElementById('m-cmpC-visited').textContent = r.visited;
+  });
+  btnReset.addEventListener('click', resetAll);
+
+  resetAll();
+})();
+</script>
+</body>
+</html>
