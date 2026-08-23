@@ -198,6 +198,36 @@
   .ctable tr:last-child td{border-bottom:none;}
   .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;}
 
+  /* ---- practice exercise (bulb) ---- */
+  .notation{display:flex;gap:16px;flex-wrap:wrap;margin:18px 0;}
+  .ntable{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:1;min-width:220px;}
+  .ntable .cap{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-dim);
+    text-transform:uppercase;letter-spacing:.08em;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--panel-2);}
+  .ntable table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:14px;}
+  .ntable td{padding:10px 14px;text-align:center;border-bottom:1px solid var(--border);}
+  .ntable tr:last-child td{border-bottom:none;color:var(--copper-bright);font-weight:600;}
+  .ntable td:first-child{color:var(--ink-dim);text-align:left;font-family:'Noto Sans KR',sans-serif;font-size:13px;}
+
+  .hint-box{display:none;margin-top:14px;background:var(--violet-soft);border:1px solid #C9C3F2;
+    border-radius:12px;padding:14px 16px;font-size:13.5px;line-height:1.7;color:#3B3391;}
+  .hint-box.show{display:block;}
+
+  .preview-table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12.8px;}
+  .preview-table th{text-align:left;color:var(--ink-dim);font-weight:500;font-size:11px;
+    text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-bottom:1px solid var(--border);}
+  .preview-table td{padding:8px;border-bottom:1px solid var(--border);}
+  .preview-table .swchip{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+    border-radius:7px;background:var(--panel-2);border:1px solid var(--copper);color:var(--copper-bright);
+    font-weight:700;font-size:12px;}
+  .preview-row{cursor:pointer;}
+  .preview-row .blurred{filter:blur(5px);transition:filter .2s;user-select:none;}
+  .preview-row.revealed .blurred{filter:none;}
+  .preview-row .hint{color:var(--ink-dim);font-size:11px;}
+  .preview-row.revealed .hint{display:none;}
+  .preview-note{font-size:11.5px;color:var(--ink-dim);margin-top:8px;font-family:'Noto Sans KR',sans-serif;}
+  .subhead{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;margin:36px 0 4px;color:var(--ink);}
+  .subhead-sub{color:var(--ink-dim);font-size:13.5px;margin:0 0 16px;line-height:1.7;}
+
   footer{margin-top:50px;color:var(--ink-dim);font-size:12px;text-align:center;}
 </style>
 </head>
@@ -323,6 +353,64 @@
         <div class="chain-wrap"><div class="chain" id="b-chain"></div></div>
       </div>
     </div>
+
+    <div class="subhead">탐구 활동 — 전구 켜기 연습 문제</div>
+    <p class="subhead-sub">1번 전구만 불이 꺼져 있고 나머지 전구는 모두 켜져 있을 때, 모든 전구를 켜려면 어떤
+    스위치를 눌러야 할까? 초기 상태와 목표 상태를 스스로 세워 보고 아래 회로에서 확인해 보자.</p>
+
+    <div class="notation">
+      <div class="ntable">
+        <div class="cap">초기 상태</div>
+        <table><tr><td>전구</td><td>1</td><td>2</td><td>3</td><td>4</td></tr>
+        <tr><td>상태</td><td>0</td><td>1</td><td>1</td><td>1</td></tr></table>
+      </div>
+      <div class="ntable">
+        <div class="cap">목표 상태</div>
+        <table><tr><td>전구</td><td>1</td><td>2</td><td>3</td><td>4</td></tr>
+        <tr><td>상태</td><td>1</td><td>1</td><td>1</td><td>1</td></tr></table>
+      </div>
+    </div>
+
+    <div class="glayout">
+      <div class="board">
+        <div class="board-label"><span>회로도 · click a switch</span><span id="p-badge"></span></div>
+        <svg id="p-svg" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg">
+          <g class="wires-g"></g><g class="bulbs-g"></g><g class="switches-g"></g>
+        </svg>
+      </div>
+
+      <div class="panel">
+        <div class="stat-row">
+          <div class="stat"><div class="k">조작 횟수</div><div class="v" id="p-moves">0</div></div>
+          <div class="stat"><div class="k">켜진 전구</div><div class="v" id="p-lit">0 / 4</div></div>
+        </div>
+        <div>
+          <div class="k" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">현재 상태 (① ② ③ ④)</div>
+          <div class="state-bits" id="p-bits"></div>
+        </div>
+        <div class="win-banner" id="p-win"><b>목표 상태 도달!</b><br>총 <span id="p-winmoves">0</span>번의 조작으로 문제를 해결했다.</div>
+        <div class="btnrow">
+          <button class="action" id="p-reset">다시 시작</button>
+          <button class="action violet" id="p-hint-btn">힌트 / 정답 보기</button>
+        </div>
+        <div class="hint-box" id="p-hint">
+          <b style="color:#2A2470;">정답 경로</b><br>
+          스위치 <b>A, B, D</b>를 순서와 상관없이 한 번씩만 누르면 3회 만에 목표 상태(1111)에 도달한다.
+          C를 누르면 이미 켜져 있는 2·3·4번 전구가 꺼져 버리므로 이번 문제에서는 사용하지 않는다.
+        </div>
+        <div class="chain-label">상태 공간 경로</div>
+        <div class="chain-wrap"><div class="chain" id="p-chain"></div></div>
+      </div>
+    </div>
+
+    <div class="board" style="margin-top:20px;padding:18px 22px;">
+      <div class="board-label"><span>다음 상태 미리보기 — 클릭해서 확인해 보자</span></div>
+      <table class="preview-table" id="p-preview">
+        <thead><tr><th>현재 상태</th><th>수행 작업</th><th>켜진 전구</th><th>꺼진 전구</th></tr></thead>
+        <tbody id="p-preview-body"></tbody>
+      </table>
+      <div class="preview-note">회로에서 스위치를 누르면 "현재 상태"가 바뀌고, 이 표는 그 상태를 기준으로 자동 갱신된다.</div>
+    </div>
   </section>
 
   <footer>인공지능과 탐색 · 인공지능 기초 1단원 학습 도구 — 전구 켜기 문제 &amp; 미로 찾기 문제</footer>
@@ -339,132 +427,169 @@
 
   function el(tag, attrs){ const e=document.createElementNS(NS, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
   function stateStr(arr){ return arr.map(b=>b?'1':'0').join(''); }
+  function litList(arr){ const l=[]; arr.forEach((b,i)=>{if(b)l.push(i+1);}); return l.length? l.map(n=>numChar[n-1]).join(' '):'없음'; }
+  function offList(arr){ const l=[]; arr.forEach((b,i)=>{if(!b)l.push(i+1);}); return l.length? l.map(n=>numChar[n-1]).join(' '):'없음'; }
+  function applySwitch(state, sw){ const next = state.slice(); wiring[sw].forEach(bn=>{ next[bn-1] = !next[bn-1]; }); return next; }
 
-  const svg = document.getElementById('b-svg');
-  const wiresG = svg.querySelector('.wires-g');
-  const bulbsG = svg.querySelector('.bulbs-g');
-  const switchesG = svg.querySelector('.switches-g');
+  function buildSimulator(prefix, initialState){
+    const svg = document.getElementById(prefix+'-svg');
+    const wiresG = svg.querySelector('.wires-g');
+    const bulbsG = svg.querySelector('.bulbs-g');
+    const switchesG = svg.querySelector('.switches-g');
 
-  const wireEls = [];
-  Object.keys(wiring).forEach(sw=>{
-    wiring[sw].forEach(bn=>{
-      const p1 = switchPos[sw], p2 = bulbPos[bn];
-      const line = el('line',{x1:p1.x,y1:p1.y,x2:p2.x,y2:p2.y,class:'wire'});
-      wiresG.appendChild(line);
-      wireEls.push({line, bulb:bn});
+    const wireEls = [];
+    Object.keys(wiring).forEach(sw=>{
+      wiring[sw].forEach(bn=>{
+        const p1 = switchPos[sw], p2 = bulbPos[bn];
+        const line = el('line',{x1:p1.x,y1:p1.y,x2:p2.x,y2:p2.y,class:'wire'});
+        wiresG.appendChild(line);
+        wireEls.push({line, bulb:bn});
+      });
     });
-  });
 
-  const bulbEls = {};
-  [1,2,3,4].forEach(bn=>{
-    const p = bulbPos[bn];
-    const g = el('g',{});
-    const glass = el('circle',{cx:p.x,cy:p.y,r:34,class:'bulb-glass'});
-    const base = el('rect',{x:p.x-10,y:p.y+30,width:20,height:14,rx:3,class:'bulb-base'});
-    const num = el('text',{x:p.x,y:p.y,class:'bulb-number off'});
-    num.textContent = numChar[bn-1];
-    g.appendChild(glass); g.appendChild(base); g.appendChild(num);
-    bulbsG.appendChild(g);
-    bulbEls[bn] = {glass, num};
-  });
-
-  Object.keys(switchPos).forEach(sw=>{
-    const p = switchPos[sw];
-    const g = el('g',{class:'switch-hit'});
-    const body = el('rect',{x:p.x-32,y:p.y-26,width:64,height:52,rx:12,class:'switch-body'});
-    const label = el('text',{x:p.x,y:p.y-2,class:'switch-label'});
-    label.textContent = sw;
-    const cap = el('text',{x:p.x,y:p.y+18,class:'switch-caption'});
-    cap.textContent = wiring[sw].map(n=>numChar[n-1]).join(' ');
-    g.appendChild(body); g.appendChild(label); g.appendChild(cap);
-    g.addEventListener('click', ()=>press(sw));
-    switchesG.appendChild(g);
-  });
-
-  const bitsBox = document.getElementById('b-bits');
-  const bitEls = [];
-  for(let i=0;i<4;i++){
-    const d = document.createElement('div');
-    d.className = 'bit';
-    bitsBox.appendChild(d);
-    bitEls.push(d);
-  }
-
-  const movesEl = document.getElementById('b-moves');
-  const litEl = document.getElementById('b-lit');
-  const winEl = document.getElementById('b-win');
-  const winMovesEl = document.getElementById('b-winmoves');
-  const chainEl = document.getElementById('b-chain');
-  const badgeEl = document.getElementById('b-badge');
-
-  let state, moves, chain;
-
-  function render(){
+    const bulbEls = {};
     [1,2,3,4].forEach(bn=>{
-      const on = state[bn-1];
-      bulbEls[bn].glass.classList.toggle('on', on);
-      bulbEls[bn].num.classList.toggle('on', on);
-      bulbEls[bn].num.classList.toggle('off', !on);
+      const p = bulbPos[bn];
+      const g = el('g',{});
+      const glass = el('circle',{cx:p.x,cy:p.y,r:34,class:'bulb-glass'});
+      const base = el('rect',{x:p.x-10,y:p.y+30,width:20,height:14,rx:3,class:'bulb-base'});
+      const num = el('text',{x:p.x,y:p.y,class:'bulb-number off'});
+      num.textContent = numChar[bn-1];
+      g.appendChild(glass); g.appendChild(base); g.appendChild(num);
+      bulbsG.appendChild(g);
+      bulbEls[bn] = {glass, num};
     });
-    wireEls.forEach(w=>{ w.line.classList.toggle('energized', state[w.bulb-1]); });
+
+    Object.keys(switchPos).forEach(sw=>{
+      const p = switchPos[sw];
+      const g = el('g',{class:'switch-hit'});
+      const body = el('rect',{x:p.x-32,y:p.y-26,width:64,height:52,rx:12,class:'switch-body'});
+      const label = el('text',{x:p.x,y:p.y-2,class:'switch-label'});
+      label.textContent = sw;
+      const cap = el('text',{x:p.x,y:p.y+18,class:'switch-caption'});
+      cap.textContent = wiring[sw].map(n=>numChar[n-1]).join(' ');
+      g.appendChild(body); g.appendChild(label); g.appendChild(cap);
+      g.addEventListener('click', ()=>press(sw));
+      switchesG.appendChild(g);
+    });
+
+    const bitsBox = document.getElementById(prefix+'-bits');
+    const bitEls = [];
     for(let i=0;i<4;i++){
-      bitEls[i].classList.toggle('on', state[i]);
-      bitEls[i].textContent = numChar[i] + ' ' + (state[i]?'1':'0');
+      const d = document.createElement('div');
+      d.className = 'bit';
+      bitsBox.appendChild(d);
+      bitEls.push(d);
     }
-    movesEl.textContent = moves;
-    const lit = state.filter(Boolean).length;
-    litEl.textContent = lit + ' / 4';
-    const won = lit === 4;
-    winEl.classList.toggle('show', won);
-    if(won) winMovesEl.textContent = moves;
-    badgeEl.textContent = won ? '✓ 목표 상태' : '';
-    renderChain();
+
+    const movesEl = document.getElementById(prefix+'-moves');
+    const litEl = document.getElementById(prefix+'-lit');
+    const winEl = document.getElementById(prefix+'-win');
+    const winMovesEl = document.getElementById(prefix+'-winmoves');
+    const chainEl = document.getElementById(prefix+'-chain');
+    const badgeEl = document.getElementById(prefix+'-badge');
+
+    let state, moves, chain, onStateChange = null;
+
+    function render(){
+      [1,2,3,4].forEach(bn=>{
+        const on = state[bn-1];
+        bulbEls[bn].glass.classList.toggle('on', on);
+        bulbEls[bn].num.classList.toggle('on', on);
+        bulbEls[bn].num.classList.toggle('off', !on);
+      });
+      wireEls.forEach(w=>{ w.line.classList.toggle('energized', state[w.bulb-1]); });
+      for(let i=0;i<4;i++){
+        bitEls[i].classList.toggle('on', state[i]);
+        bitEls[i].textContent = numChar[i] + ' ' + (state[i]?'1':'0');
+      }
+      movesEl.textContent = moves;
+      const lit = state.filter(Boolean).length;
+      litEl.textContent = lit + ' / 4';
+      const won = lit === 4;
+      winEl.classList.toggle('show', won);
+      if(won) winMovesEl.textContent = moves;
+      badgeEl.textContent = won ? '✓ 목표 상태' : '';
+      renderChain();
+      if(onStateChange) onStateChange();
+    }
+
+    function renderChain(){
+      chainEl.innerHTML = '';
+      chain.forEach((node, idx)=>{
+        if(idx>0){
+          const edge = document.createElement('div');
+          edge.className = 'chain-edge';
+          edge.innerHTML = '<span class="arrow">→</span><span class="swlabel">'+node.sw+'</span>';
+          chainEl.appendChild(edge);
+        }
+        const n = document.createElement('div');
+        const lit4 = node.state.filter(Boolean).length===4;
+        n.className = 'chain-node' + (idx===0?' root':'') + (lit4?' goal':'');
+        n.innerHTML = '<div class="code">'+stateStr(node.state)+'</div><div class="lit">'+(idx===0?'초기':(lit4?'목표!':'상태'))+'</div>';
+        chainEl.appendChild(n);
+      });
+    }
+
+    function press(sw){
+      state = applySwitch(state, sw);
+      moves++;
+      chain.push({sw, state:state.slice()});
+      render();
+    }
+
+    function reset(){
+      state = initialState.slice();
+      moves = 0;
+      chain = [{sw:null, state:state.slice()}];
+      render();
+    }
+
+    async function runStrategy(order){
+      for(const sw of order){
+        await new Promise(r=>setTimeout(r, 550));
+        press(sw);
+      }
+    }
+
+    reset();
+
+    return { press, reset, runStrategy, getState:()=>state.slice(),
+      setOnStateChange:(fn)=>{ onStateChange = fn; } };
   }
 
-  function renderChain(){
-    chainEl.innerHTML = '';
-    chain.forEach((node, idx)=>{
-      if(idx>0){
-        const edge = document.createElement('div');
-        edge.className = 'chain-edge';
-        edge.innerHTML = '<span class="arrow">→</span><span class="swlabel">'+node.sw+'</span>';
-        chainEl.appendChild(edge);
-      }
-      const n = document.createElement('div');
-      const lit4 = node.state.filter(Boolean).length===4;
-      n.className = 'chain-node' + (idx===0?' root':'') + (lit4?' goal':'');
-      n.innerHTML = '<div class="code">'+stateStr(node.state)+'</div><div class="lit">'+(idx===0?'초기':(lit4?'목표!':'상태'))+'</div>';
-      chainEl.appendChild(n);
+  const main = buildSimulator('b', [false,false,false,false]);
+  document.getElementById('b-reset').addEventListener('click', ()=>main.reset());
+  document.getElementById('b-strategy').addEventListener('click', ()=>{ main.reset(); main.runStrategy(['A','B','C','D']); });
+
+  const practice = buildSimulator('p', [false,true,true,true]);
+  document.getElementById('p-reset').addEventListener('click', ()=>{
+    practice.reset();
+    document.getElementById('p-hint').classList.remove('show');
+  });
+  document.getElementById('p-hint-btn').addEventListener('click', ()=>{
+    document.getElementById('p-hint').classList.toggle('show');
+  });
+
+  const previewBody = document.getElementById('p-preview-body');
+  function buildPreviewRows(){
+    previewBody.innerHTML = '';
+    const cur = practice.getState();
+    Object.keys(wiring).forEach(sw=>{
+      const next = applySwitch(cur, sw);
+      const tr = document.createElement('tr');
+      tr.className = 'preview-row';
+      tr.innerHTML =
+        '<td><span class="hint">클릭해서 확인</span><span class="blurred">' + stateStr(cur) + '</span></td>'+
+        '<td><span class="swchip">'+sw+'</span> 스위치를 누름</td>'+
+        '<td class="blurred">'+litList(next)+'</td>'+
+        '<td class="blurred">'+offList(next)+'</td>';
+      tr.addEventListener('click', ()=> tr.classList.toggle('revealed'));
+      previewBody.appendChild(tr);
     });
   }
-
-  function press(sw){
-    const next = state.slice();
-    wiring[sw].forEach(bn=>{ next[bn-1] = !next[bn-1]; });
-    state = next;
-    moves++;
-    chain.push({sw, state:state.slice()});
-    render();
-  }
-
-  function reset(){
-    state = [false,false,false,false];
-    moves = 0;
-    chain = [{sw:null, state:state.slice()}];
-    render();
-  }
-
-  async function runStrategy(order){
-    for(const sw of order){
-      await new Promise(r=>setTimeout(r, 550));
-      press(sw);
-    }
-  }
-
-  document.getElementById('b-reset').addEventListener('click', reset);
-  document.getElementById('b-strategy').addEventListener('click', ()=>{ reset(); runStrategy(['A','B','C','D']); });
-
-  reset();
+  practice.setOnStateChange(buildPreviewRows);
+  buildPreviewRows();
 })();
 
 /* ============================= 미로 찾기 ============================= */
