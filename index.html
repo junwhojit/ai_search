@@ -255,6 +255,22 @@
     border:1px solid var(--border);background:var(--panel-2);color:var(--ink-dim);cursor:pointer;}
   .quiz-reset:hover{color:var(--ink);border-color:var(--copper);}
 
+  /* ---- term glossary ---- */
+  .term-table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:16px;
+    overflow-x:auto;box-shadow:0 1px 3px rgba(22,35,61,0.05);}
+  .term-table{width:100%;border-collapse:collapse;min-width:720px;}
+  .term-table th{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-dim);
+    text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:12px 18px;
+    border-bottom:1px solid var(--border);background:var(--panel-2);white-space:nowrap;}
+  .term-table td{padding:14px 18px;border-bottom:1px solid var(--border);font-size:13.8px;
+    line-height:1.6;color:var(--ink-dim);vertical-align:top;}
+  .term-table tr:last-child td{border-bottom:none;}
+  .term-table td.term{font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--ink);
+    white-space:nowrap;font-size:14.5px;}
+  .term-table td.maze-eg{color:#4A3D8F;}
+  .term-table td.bulb-eg{color:#9C5A1E;}
+  .term-table tr:hover td{background:var(--panel-2);}
+
   footer{margin-top:50px;color:var(--ink-dim);font-size:12px;text-align:center;}
 </style>
 </head>
@@ -262,6 +278,7 @@
 
 <nav class="topnav"><div class="inner">
   <span class="brand"><span class="sq"></span>인공지능과 탐색</span>
+  <a href="#terms">용어 정리</a>
   <a href="#maze">미로 찾기</a>
   <a href="#bulb">전구 켜기</a>
   <a href="#quiz">퀴즈</a>
@@ -276,6 +293,72 @@
     목표 상태까지의 경로를 찾는 탐색 문제</b>다. 직접 조작해 보면서 상태, 수행 작업, 탐색 전략이라는
     개념이 실제로 어떻게 작동하는지 확인해 보자.</p>
   </header>
+
+  <section class="block" id="terms" style="border-top:none;padding-top:14px;">
+    <h2 class="sect-title">용어 정리 <span class="tag">glossary</span></h2>
+    <p class="sect-sub">아래 8개 용어는 두 문제 모두에 공통으로 쓰이는 탐색의 기본 개념이다. 시뮬레이터를
+    조작하다가 헷갈리면 이 표로 돌아와 확인해 보자.</p>
+
+    <div class="term-table-wrap">
+      <table class="term-table">
+        <thead>
+          <tr><th>용어</th><th>쉬운 설명</th><th>미로 찾기 비유</th><th>전구 켜기 비유</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="term">탐색</td>
+            <td>문제의 답을 찾아 이리저리 시도해보는 과정. "이렇게 해볼까? 저렇게 해볼까?" 하며 정답에 다가가는 것</td>
+            <td class="maze-eg">마우스가 미로에서 출구를 찾아 헤매는 것</td>
+            <td class="bulb-eg">스위치를 이것저것 눌러보며 전구를 모두 켜는 방법을 찾는 것</td>
+          </tr>
+          <tr>
+            <td class="term">상태</td>
+            <td>어떤 순간의 "모습" 한 장. 사진 한 장을 찍었다고 생각하면 된다</td>
+            <td class="maze-eg">지금 마우스가 미로의 어느 칸에 있는 모습</td>
+            <td class="bulb-eg">지금 전구가 어떤 것은 켜지고 어떤 것은 꺼진 모습 (예: 1101)</td>
+          </tr>
+          <tr>
+            <td class="term">상태 공간</td>
+            <td>있을 수 있는 "모습 사진"을 전부 모아놓은 앨범</td>
+            <td class="maze-eg">미로의 모든 칸 각각에 마우스가 있을 수 있는 경우 전부</td>
+            <td class="bulb-eg">전구 4개가 만들 수 있는 모든 경우 = 16장의 사진(0000~1111)</td>
+          </tr>
+          <tr>
+            <td class="term">초기 상태</td>
+            <td>앨범의 첫 페이지, 시작할 때의 사진</td>
+            <td class="maze-eg">마우스가 출발점에 서 있는 모습</td>
+            <td class="bulb-eg">전구가 다 꺼진 모습(0000)</td>
+          </tr>
+          <tr>
+            <td class="term">목표 상태</td>
+            <td>우리가 찾고 싶은 "완성된 사진"</td>
+            <td class="maze-eg">마우스가 도착점에 서 있는 모습</td>
+            <td class="bulb-eg">전구가 다 켜진 모습(1111)</td>
+          </tr>
+          <tr>
+            <td class="term">상태공간트리</td>
+            <td>사진들을 "이 사진에서 이렇게 하면 저 사진이 된다"는 식으로 나뭇가지처럼 이어 그린 지도</td>
+            <td class="maze-eg">출발점에서 한 칸씩 움직일 때마다 가지가 뻗어나가는 그림</td>
+            <td class="bulb-eg">0000에서 시작해 스위치를 누를 때마다 가지가 뻗어나가는 그림</td>
+          </tr>
+          <tr>
+            <td class="term">노드</td>
+            <td>트리에서 사진 한 장(=상태)을 나타내는 동그라미 하나</td>
+            <td class="maze-eg">"마우스가 이 칸에 있음"을 나타내는 동그라미 하나</td>
+            <td class="bulb-eg">"1101"이라고 적힌 동그라미 하나</td>
+          </tr>
+          <tr>
+            <td class="term">링크</td>
+            <td>노드와 노드를 잇는 선. "이 행동을 하면 다음 사진으로 넘어간다"는 화살표</td>
+            <td class="maze-eg">한 칸 앞으로 이동하는 행동</td>
+            <td class="bulb-eg">A 스위치를 누르는 행동(화살표에 "A"라고 적힘)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="trace"><div class="node"></div><div class="seg"></div><span>두 문제로 직접 확인해 보기</span><div class="seg"></div><div class="node"></div></div>
 
   <!-- ================= 미로 찾기 ================= -->
   <section class="block" id="maze">
